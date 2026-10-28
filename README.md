@@ -1,56 +1,62 @@
-# Welcome to your Expo app 👋
+# Modo Foco: bloqueio de apps (Android)
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Durante uma sessão de foco, o app detecta quando você abre um app da lista bloqueada e mostra uma tela por cima: **"Você está em foco. Faltam X minutos"**, com os botões **Voltar ao foco** e **Desbloquear por 1 minuto**. O segundo só fica ativo depois de 5 segundos.
 
-## Get started
+O bloqueio fica no módulo nativo local [`modules/modo-foco-blocker`](modules/modo-foco-blocker), escrito em Kotlin:
 
-1. Install dependencies
+| Arquivo | O que faz |
+|---|---|
+| `ModoFocoBlockerModule.kt` | Ponte JS ↔ Kotlin (as funções chamadas pelo TypeScript) |
+| `PermissionHelper.kt` | Verifica e abre as telas de "Acesso ao uso" e "Sobrepor a outros apps" |
+| `AppListHelper.kt` | Lista os apps da gaveta (sem o Modo Foco, launchers e Configurações) |
+| `BlockerPrefs.kt` | Salva a sessão (apps, `endsAt`, desbloqueio) no SharedPreferences |
+| `ForegroundAppDetector.kt` | Descobre o app na tela pelo último `ACTIVITY_RESUMED` do UsageStatsManager |
+| `BlockerService.kt` | Foreground Service: verifica a cada 1 s e se encerra sozinho no `endsAt` |
+| `OverlayController.kt` | A tela de bloqueio (View no WindowManager com `TYPE_APPLICATION_OVERLAY`) |
 
-   ```bash
-   npm install
-   ```
+## Como rodar
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+O app usa código nativo próprio, então **não funciona no Expo Go**. É preciso um *development build*.
 
 ```bash
-npm run reset-project
+npm install
+
+# Opção 1: build na nuvem (não precisa de Android SDK no PC)
+npx eas-cli@latest build --profile development --platform android
+# → abra no celular o link do .apk que aparece no final e instale
+
+# Opção 2: build local (precisa de Android SDK + JDK 17 ou 21)
+npx expo run:android
+
+# Depois, com o APK instalado, suba o servidor de JavaScript:
+npx expo start
 ```
 
-This command will move the starter code to the **example** directory and create a blank **src/app** directory where you can start developing.
+Mudanças só em TypeScript aparecem na hora (hot reload). Mudanças no Kotlin, no `AndroidManifest.xml` ou em dependências nativas exigem **um build novo**.
 
-### Other setup steps
+## Como testar no celular
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+1. Abra **Permissões** e conceda **Acesso ao uso** e **Sobrepor a outros apps**. O status atualiza quando você volta para o app.
+2. Abra **Escolher apps** e marque, por exemplo, o Instagram.
+3. Abra **Sessão de foco**, escolha **2 min** e toque em **Iniciar foco**. Permita as notificações. A notificação "Modo Foco ativo · Faltam 2 min" aparece.
+4. Abra o Instagram: o overlay deve aparecer em até ~1 segundo.
+5. **Voltar ao foco** leva de volta ao Modo Foco. **Desbloquear por 1 minuto** libera o app por 60 s.
+6. Depois dos 2 minutos, o Instagram abre normalmente e a notificação some, mesmo com o Modo Foco fechado.
 
-## Learn more
+Para ver os logs do serviço (precisa do `adb` e da depuração USB ativada):
 
-To learn more about developing your project with Expo, look at the following resources:
+```bash
+adb logcat -s ModoFoco
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Limitações conhecidas
 
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- **Fabricantes que matam serviços.** Xiaomi (MIUI/HyperOS), Samsung, Huawei, Oppo e outros podem encerrar o serviço para economizar bateria, e aí o bloqueio para. Para evitar:
+  - Nas Configurações, vá em **Apps → Modo Foco → Bateria** e escolha **Sem restrições** (ou "Não otimizar").
+  - **Xiaomi:** ative também o **Início automático** e, em "Economia de bateria", escolha **Sem restrições**.
+  - **Samsung:** em **Bateria → Limites de uso em segundo plano**, tire o Modo Foco de "Apps em suspensão".
+  - Guia por fabricante: <https://dontkillmyapp.com>
+- **Atraso de até ~1 segundo.** A verificação é feita a cada segundo, então o app bloqueado pode aparecer por um instante antes do overlay.
+- **Não é à prova de burla.** O usuário pode tirar as permissões nas Configurações ou forçar a parada do Modo Foco. A ideia é ajudar, não punir.
+- **Só Android.** O iOS não permite este tipo de bloqueio sem a API Screen Time, que exige uma permissão especial da Apple.
+- **Google Play.** Apps com `PACKAGE_USAGE_STATS`, sobreposição e foreground service do tipo `specialUse` precisam justificar o uso na revisão da loja.

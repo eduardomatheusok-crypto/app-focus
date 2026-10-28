@@ -1,0 +1,53 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:tools="http://schemas.android.com/tools">
+
+  <!-- Este manifest é mesclado automaticamente no manifest do app durante o build. -->
+
+  <!-- Ler o histórico de uso de apps (para saber qual app está na tela).
+       É uma permissão "especial": o usuário precisa liberar manualmente nas Configurações. -->
+  <uses-permission
+    android:name="android.permission.PACKAGE_USAGE_STATS"
+    tools:ignore="ProtectedPermissions" />
+
+  <!-- Desenhar por cima de outros apps (o overlay de bloqueio). Também liberada nas Configurações. -->
+  <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
+  <!-- Rodar um Foreground Service (serviço com notificação fixa) e declarar o tipo "specialUse",
+       obrigatório a partir do Android 14. -->
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+
+  <!-- Mostrar a notificação "Modo Foco ativo" (no Android 13+ o usuário precisa permitir). -->
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+  <!-- A partir do Android 11, um app só "enxerga" outros apps que declarar aqui.
+       Pedimos só os que têm ícone na gaveta (MAIN + LAUNCHER), sem usar QUERY_ALL_PACKAGES.
+       Também declaramos HOME e Configurações, para sabermos quais pacotes nunca bloquear. -->
+  <queries>
+    <intent>
+      <action android:name="android.intent.action.MAIN" />
+      <category android:name="android.intent.category.LAUNCHER" />
+    </intent>
+    <intent>
+      <action android:name="android.intent.action.MAIN" />
+      <category android:name="android.intent.category.HOME" />
+    </intent>
+    <intent>
+      <action android:name="android.settings.SETTINGS" />
+    </intent>
+  </queries>
+
+  <application>
+    <!-- O serviço de bloqueio. exported="false": outros apps não podem iniciá-lo. -->
+    <service
+      android:name="expo.modules.modofocoblocker.BlockerService"
+      android:exported="false"
+      android:foregroundServiceType="specialUse">
+      <!-- O Google pede uma explicação de por que o serviço é "specialUse". -->
+      <property
+        android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+        android:value="Bloqueia, durante uma sessão de foco iniciada pelo usuário, os apps que ele mesmo escolheu" />
+    </service>
+  </application>
+
+</manifest>
