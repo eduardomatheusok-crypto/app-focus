@@ -1,12 +1,12 @@
 import { Stack } from 'expo-router';
 
+import { colors } from '@/constants/theme';
+
 export default function RootLayout() {
   return (
-    <Stack>
-      <Stack.Screen name="index" options={{ title: 'Modo Foco' }} />
-      <Stack.Screen name="permissions" options={{ title: 'Permissões' }} />
+    <Stack screenOptions={{ contentStyle: { backgroundColor: colors.background } }}>
+      <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="apps" options={{ title: 'Apps bloqueados' }} />
-      <Stack.Screen name="session" options={{ title: 'Sessão de foco' }} />
     </Stack>
   );
 }

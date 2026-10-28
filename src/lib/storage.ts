@@ -1,16 +1,18 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const BLOCKED_APPS_KEY = 'modo-foco:blocked-apps';
-const SESSION_ENDS_AT_KEY = 'modo-foco:session-ends-at';
+const SESSION_KEY = 'modo-foco:session';
 
-export async function loadSessionEndsAt(): Promise<number | null> {
-  const raw = await AsyncStorage.getItem(SESSION_ENDS_AT_KEY);
-  return raw ? Number(raw) : null;
+export type Session = { startedAt: number; endsAt: number };
+
+export async function loadSession(): Promise<Session | null> {
+  const raw = await AsyncStorage.getItem(SESSION_KEY);
+  return raw ? (JSON.parse(raw) as Session) : null;
 }
 
-export async function saveSessionEndsAt(endsAt: number | null): Promise<void> {
-  if (endsAt === null) await AsyncStorage.removeItem(SESSION_ENDS_AT_KEY);
-  else await AsyncStorage.setItem(SESSION_ENDS_AT_KEY, String(endsAt));
+export async function saveSession(session: Session | null): Promise<void> {
+  if (session === null) await AsyncStorage.removeItem(SESSION_KEY);
+  else await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(session));
 }
 
 export async function loadBlockedApps(): Promise<string[]> {

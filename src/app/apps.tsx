@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import Blocker, { type LaunchableApp } from '../../modules/modo-foco-blocker';
+import { colors } from '@/constants/theme';
 import { loadBlockedApps, saveBlockedApps } from '@/lib/storage';
 
 export default function AppsScreen() {
@@ -73,10 +74,10 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 4,
     borderWidth: 2,
-    borderColor: '#208AEF',
+    borderColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checkboxChecked: { backgroundColor: '#208AEF' },
+  checkboxChecked: { backgroundColor: colors.accent },
   checkmark: { color: '#fff', fontWeight: '700' },
 });
